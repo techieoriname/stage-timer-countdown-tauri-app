@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.bg-flash {
+    animation: flash-bg 1s infinite;
+}
+
+@keyframes flash-bg {
+    0%, 100% { background-color: black; }
+    50% { background-color: red; }
+}
+
+.animate-flash {
+    animation: flash-text 1s infinite;
+}
+
+@keyframes flash-text {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
