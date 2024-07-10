@@ -19,3 +19,15 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
 }
+
+* {
+    /* Disable text selection */
+    user-select: none;
+    /* Specifically for Safari */
+    -webkit-user-select: none;
+}
+
+html, body {
+    /* Disable elastic scrolling */
+    overscroll-behavior-y: none;
+}
