@@ -8,6 +8,7 @@ const Main: React.FC = () => {
     const [enableFlash, setEnableFlash] = useState(true);
     const [previewTime, setPreviewTime] = useState(0);
     const [timeUp, setTimeUp] = useState(false);
+    const [activity, setActivity] = useState("");
     const minutesRef = useRef<HTMLDivElement>(null);
     const secondsRef = useRef<HTMLDivElement>(null);
     const [focusedInput, setFocusedInput] = useState<"minutes" | "seconds">("minutes");
@@ -22,21 +23,17 @@ const Main: React.FC = () => {
         const unlistenUpdateTimer = listen("update_timer", (event) => {
             const payload = event.payload as { minutes: number, seconds: number };
             setPreviewTime(payload.minutes * 60 + payload.seconds);
-            console.log("Event update_timer", payload); // Debugging log
         });
 
         // Listen for time up event from the timer screen
         const unlistenTimeUp = listen("time_up", () => {
-            console.log("Event time_up received"); // Debugging log
             setTimeUp(true);
-            console.log("State timeUp set to true"); // Debugging log
         });
 
         // Listen for flash state changes
         const unlistenFlashState = listen("set_flash_state", (event) => {
             const state = event.payload as boolean;
             setEnableFlash(state);
-            console.log("Event set_flash_state", state); // Debugging log
         });
 
         return () => {
@@ -48,7 +45,7 @@ const Main: React.FC = () => {
 
     const handleStart = () => {
         setTimeUp(false); // Reset timeUp when starting
-        invoke('start_timer', { minutes, seconds }).catch(console.error);
+        invoke('start_timer', { minutes, seconds, activity }).catch(console.error);
         refocusInput();
     };
 
@@ -144,28 +141,41 @@ const Main: React.FC = () => {
                     {String(seconds).padStart(2, "0")}
                 </div>
             </div>
-            <button
-                className="bg-green-500 text-white p-2 rounded mb-4"
-                onClick={handleStart}
-            >
-                Start
-            </button>
-            <button
-                className="bg-yellow-500 text-white p-2 rounded mb-4"
-                onClick={handleReset}
-            >
-                Reset
-            </button>
-            <button
-                className="bg-red-500 text-white p-2 rounded"
-                onClick={handleFlashToggle}
-            >
-                {enableFlash ? "Disable Flash" : "Enable Flash"}
-            </button>
+            <input
+                type="text"
+                value={activity}
+                onChange={(e) => setActivity(e.target.value)}
+                placeholder="Enter activity (e.g., Prayers)"
+                className="p-2 mb-4 text-gray-300 bg-gray-800 rounded outline-none ring-0 border-0 focus:ring-0 focus:outline-none focus:border-0 text-sm"
+            />
+            <div className="flex space-x-4 mb-4">
+                <button
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded w-32 transition duration-300 ease-in-out"
+                    onClick={handleReset}
+                >
+                    Reset
+                </button>
+                <button
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-32 transition duration-300 ease-in-out"
+                    onClick={handleStart}
+                >
+                    Start
+                </button>
+                <button
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-32 transition duration-300 ease-in-out"
+                    onClick={handleFlashToggle}
+                >
+                    {enableFlash ? "Disable Flash" : "Enable Flash"}
+                </button>
+            </div>
             <div className="mt-8 text-4xl">
                 <h3 className="font-black">Preview Timer</h3>
-                <div className={`text-center ${timeUp && enableFlash ? "animate-flash" : ""}`} style={{ fontSize: "3rem" }}>
-                    {timeUp ? "TIME UP!!!" : formatTime(previewTime)}
+                <div className={`text-center ${timeUp && enableFlash ? "animate-flash" : ""}`}
+                     style={{ fontSize: "3rem" }}>
+                {timeUp ? "TIME UP!!!" : formatTime(previewTime)}
+                </div>
+                <div className="text-center text-2xl mt-2">
+                    {activity}
                 </div>
             </div>
         </div>
