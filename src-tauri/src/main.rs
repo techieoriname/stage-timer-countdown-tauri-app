@@ -41,6 +41,7 @@ fn main() {
                 "timer",
                 tauri::WindowUrl::App("index.html#/timer".into()),
             )
+            .title("Countdown Timer by Oriname")
             .fullscreen(true)
             .build()?));
 
