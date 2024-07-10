@@ -4,15 +4,15 @@ use std::sync::{Arc, Mutex};
 use tauri::{Manager, WindowBuilder, AppHandle};
 
 #[tauri::command]
-fn start_timer(app_handle: AppHandle, minutes: u32, seconds: u32) {
+fn start_timer(app_handle: AppHandle, minutes: u32, seconds: u32, activity: String) {
     let total_seconds = minutes * 60 + seconds;
-    let payload = serde_json::json!({ "time": total_seconds });
+    let payload = serde_json::json!({ "time": total_seconds, "activity": activity });
     app_handle.emit_all("start_timer", payload).unwrap();
 }
 
 #[tauri::command]
-fn update_timer(app_handle: AppHandle, minutes: u32, seconds: u32) {
-    let payload = serde_json::json!({ "minutes": minutes, "seconds": seconds });
+fn update_timer(app_handle: AppHandle, minutes: u32, seconds: u32, activity: String) {
+    let payload = serde_json::json!({ "minutes": minutes, "seconds": seconds, "activity": activity });
     app_handle.emit_all("update_timer", payload).unwrap();
 }
 
