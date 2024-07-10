@@ -1,42 +1,20 @@
 import React, { useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import { listen } from "@tauri-apps/api/event";
+import Timer from "./Timer.tsx";
+import { toast } from "react-toastify";
+import Tippy from "@tippyjs/react";
 
 const Main: React.FC = () => {
     const [minutes, setMinutes] = useState(0);
     const [seconds, setSeconds] = useState(0);
     const [enableFlash, setEnableFlash] = useState(true);
-    const [previewTime, setPreviewTime] = useState(0);
-    const [timeUp, setTimeUp] = useState(false);
-    const [activities, setActivities] = useState<string[]>(["Prayers", "Worship", "Sermon", "Offering"]);
+    const [activities, setActivities] = useState<string[]>([]);
     const [activeActivity, setActiveActivity] = useState<string | null>(null);
     const [inputValue, setInputValue] = useState("");
     const inputRef = useRef<HTMLInputElement>(null);
     const minutesRef = useRef<HTMLDivElement>(null);
     const secondsRef = useRef<HTMLDivElement>(null);
     const [focusedInput, setFocusedInput] = useState<"minutes" | "seconds">("minutes");
-
-    useEffect(() => {
-        const unlistenUpdateTimer = listen("update_timer", (event) => {
-            const payload = event.payload as { minutes: number, seconds: number };
-            setPreviewTime(payload.minutes * 60 + payload.seconds);
-        });
-
-        const unlistenTimeUp = listen("time_up", () => {
-            setTimeUp(true);
-        });
-
-        const unlistenFlashState = listen("set_flash_state", (event) => {
-            const state = event.payload as boolean;
-            setEnableFlash(state);
-        });
-
-        return () => {
-            unlistenUpdateTimer.then(f => f());
-            unlistenTimeUp.then(f => f());
-            unlistenFlashState.then(f => f());
-        };
-    }, []);
 
     useEffect(() => {
         if (focusedInput === "minutes" && minutesRef.current) {
@@ -84,8 +62,8 @@ const Main: React.FC = () => {
                 setActivities([...activities, inputValue.trim()]);
                 setInputValue("");
 
-                if(activities.length === 0) {
-                    setActiveActivity(inputValue.trim())
+                if (activities.length === 0) {
+                    setActiveActivity(inputValue.trim());
                 }
             }
             e.preventDefault();
@@ -114,27 +92,26 @@ const Main: React.FC = () => {
 
     const handleStart = () => {
         if (activeActivity) {
-            invoke('start_timer', { minutes, seconds, activity: activeActivity }).catch(console.error);
+            invoke("start_timer", { minutes, seconds, activity: activeActivity }).catch(console.error);
+        } else {
+            if (activities.length === 0) {
+                toast("Please add an activity to start the timer!");
+            } else {
+                toast("Please select an activity to start the timer!");
+            }
         }
-        setTimeUp(false); // Reset timeUp when starting
     };
 
     const handleReset = () => {
         setMinutes(0);
         setSeconds(0);
-        setTimeUp(false);
-        invoke('reset_timer').catch(console.error);
+        // setTimeUp(false);
+        invoke("reset_timer").catch(console.error);
     };
 
     const handleFlashToggle = () => {
         setEnableFlash(!enableFlash);
-        invoke('set_flash_state', { enable: !enableFlash }).catch(console.error);
-    };
-
-    const formatTime = (seconds: number) => {
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}:${s < 10 ? '0' : ''}${s}`;
+        invoke("set_flash_state", { enable: !enableFlash }).catch(console.error);
     };
 
     return (
@@ -177,47 +154,49 @@ const Main: React.FC = () => {
                                     e.stopPropagation(); // Prevent the activity selection event from firing when removing
                                     removeActivity(index);
                                 }}
-                                className="text-red-500 text-sm ml-2">×
+                                className="text-red-500 text-sm ml-2 cursor-default" title="Remove activity">×
                             </button>
                         </div>
                     ))}
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={inputValue}
-                        onChange={updateInputValue}
-                        onKeyDown={handleActivityInput}
-                        placeholder={activities.length > 0 ? "" : "Add activities..."}
-                        className="bg-transparent p-1 text-white w-full outline-none"
-                    />
+                    <Tippy content="Press Enter to save" visible={inputValue.length > 0}>
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={inputValue}
+                            onChange={updateInputValue}
+                            onKeyDown={handleActivityInput}
+                            placeholder={activities.length > 0 ? "" : "Add activities..."}
+                            className="bg-transparent p-1 text-white w-full outline-none"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            autoCorrect="off"
+                        />
+                    </Tippy>
                 </div>
             </div>
             <div className="flex space-x-4 mb-4">
                 <button
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded w-32 transition duration-300 ease-in-out"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded w-32 transition duration-300 ease-in-out cursor-default"
                     onClick={handleReset}
                 >
                     Reset
                 </button>
                 <button
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-32 transition duration-300 ease-in-out"
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-32 transition duration-300 ease-in-out cursor-default"
                     onClick={handleStart}
                 >
                     Start
                 </button>
                 <button
-                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-32 transition duration-300 ease-in-out"
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-32 transition duration-300 ease-in-out cursor-default"
                     onClick={handleFlashToggle}
                 >
                     {enableFlash ? "Disable Flash" : "Enable Flash"}
                 </button>
             </div>
-            <div className="mt-8 text-4xl">
-                <h3 className="font-black">Preview Timer</h3>
-                <div className={`text-center ${timeUp && enableFlash ? "animate-flash" : ""}`}
-                     style={{ fontSize: "3rem" }}>
-                    {timeUp ? "TIME UP!!!" : formatTime(previewTime)}
-                </div>
+            <div className="mt-8 text-4xl w-3/6">
+                <h3 className="font-black text-center mb-2">Preview</h3>
+                <Timer mini={true} />
             </div>
         </div>
     );
