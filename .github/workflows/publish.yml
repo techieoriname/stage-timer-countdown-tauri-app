@@ -51,6 +51,9 @@ jobs:
       - name: install frontend dependencies
         run: yarn install
 
+      - name: build Tailwind CSS
+        run: npx tailwindcss -i ./src/assets/styles/main.css -o ./src/assets/styles/index.css
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
