@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/tauri";
 
-const Timer: React.FC = () => {
+interface TimerProps {
+    mini?: boolean;
+}
+
+const Timer: React.FC<TimerProps> = ({ mini = false }) => {
     const [time, setTime] = useState(0);
     const [timeUp, setTimeUp] = useState(false);
     const [enableFlash, setEnableFlash] = useState(true);
@@ -12,7 +16,6 @@ const Timer: React.FC = () => {
         const handleStartTimer = ({ time: totalTimeInSeconds, activity }: { time: number, activity: string }) => {
             setTime(totalTimeInSeconds);
             setActivity(activity);
-            // Reset timeUp state when starting a new timer
             setTimeUp(false);
         };
 
@@ -32,7 +35,6 @@ const Timer: React.FC = () => {
         });
 
         listen("reset_timer", handleResetTimer);
-
         listen("set_flash_state", (event) => {
             const state = event.payload as boolean;
             handleFlashStateChange(state);
@@ -48,11 +50,6 @@ const Timer: React.FC = () => {
             const interval = setInterval(() => {
                 setTime((prevTime) => {
                     const newTime = prevTime - 1;
-                    invoke("update_timer", {
-                        minutes: Math.floor(newTime / 60),
-                        seconds: newTime % 60,
-                        activity
-                    }).catch(console.error); // Send timer value to main screen
                     if (newTime <= 0) {
                         console.log("time up", newTime);
                         setTimeUp(true);
@@ -64,9 +61,6 @@ const Timer: React.FC = () => {
                 });
             }, 1000);
             return () => clearInterval(interval);
-        } else {
-            // Send timer value to main screen when time is zero
-            invoke("update_timer", { minutes: 0, seconds: 0, activity }).catch(console.error);
         }
     }, [time, activity]);
 
@@ -76,21 +70,22 @@ const Timer: React.FC = () => {
         return `${m}:${s < 10 ? "0" : ""}${s}`;
     };
 
+    const fontSize = mini ? "6vh" : "20vh";
+    const textStyle = mini ? "text-sm" : "text-[14vh]";
+
     return (
-        <div className={`flex items-center justify-center h-screen ${timeUp && enableFlash ? "bg-flash" : "bg-black"}`}>
+        <div className={`flex items-center justify-center ${timeUp && enableFlash ? "bg-flash" : "bg-black"} ${mini ? 'h-52' : 'h-screen'}`}>
             {timeUp ? (
                 <div className="flex flex-col justify-center items-center">
-                    <h2 className="font-bold text-white mt-8 uppercase" style={{ fontSize: "10vh" }}>{activity}</h2>
-                    <h1 className={`text-[20vh] font-black text-white ${enableFlash ? "animate-flash" : ""}`}>TIME
-                        UP!!!</h1>
+                    <h2 className={`font-bold text-white mt-8 uppercase ${textStyle}`}>{activity}</h2>
+                    <h1 className={`font-black text-white ${enableFlash ? "animate-flash" : ""}`} style={{ fontSize }}>TIME UP!!!</h1>
                 </div>
             ) : (
                 <div className="flex flex-col justify-center items-center">
-                <h2 className="font-bold text-white mt-8 uppercase" style={{ fontSize: "10vh" }}>{activity}</h2>
-                    <h1 className="font-black text-white" style={{ fontSize: "30vh" }}>{formatTime(time)}</h1>
+                    <h2 className={`font-bold text-white mt-8 uppercase ${textStyle}`}>{activity}</h2>
+                    <h1 className="font-black text-white" style={{ fontSize }}>{formatTime(time)}</h1>
                 </div>
-            )
-            }
+            )}
         </div>
     );
 };
